@@ -1,6 +1,3 @@
-
-[toc]
-
 # Gomoku by 634s
 
 ## Installation
