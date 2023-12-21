@@ -1,6 +1,5 @@
 import argparse
 
-import pytorch_lightning as pl
 import torch
 
 from alphazero_pl import AlphaZeroNet
@@ -23,7 +22,6 @@ def parse_args():
                         required=False, 
                         help='White Stone Player, none for human player.')
     
-
     args = parser.parse_args()
     return args
 
@@ -32,19 +30,34 @@ def tuple2loc(x, y, width):
     return x * width + y
 
 
-def gameplay(mcts, gomoku, similate=None):
+def gameplay(mcts, gomoku):
+    """This section manages real-time gameplay where players can either be 
+    AI or human.
+
+    For human players, they are required to specify the location for placing 
+    their stone by using index hints displayed on the character-based interface.
+    
+    Args:
+        mcts: This is a list consisting of two player entities. Each player can 
+        either be an AI (represented by the 'MCTS' class with an associated model) 
+        or a human (indicated by 'None').
+        gomoku: This encapsulates the game settings and the current state of the 
+        game during play.
+    """
     step = 0
     print(gomoku)
     while True:
         if isinstance(mcts[step % 2], MCTS):
+            # AI player
             mcts[step % 2].search(gomoku)
             action_probs = mcts[step % 2].action_probs()
             print(action_probs)         
             loc = mcts[step % 2].sample_action(action_probs)
         else:
+            # human player
             while(True):
                 try:
-                    x, y = tuple(map(int, input().split(' ')))
+                    x, y = tuple(map(lambda x: ord(x)-65, input().split(' ')))
                 except:
                     print("Invalid input.")
                     continue
@@ -78,24 +91,24 @@ def gameplay(mcts, gomoku, similate=None):
 
 def main():
     args = parse_args()
-
     mcts = []
+
     if args.black:
         model = AlphaZeroNet.load_from_checkpoint(args.black,
-                                                  map_location='cuda',
+                                                  map_location='cpu',
                                                   board_height=args.height, 
                                                   board_width=args.width,
                                                   k=args.k)
-        mcts.append(MCTS(model, selfplay=False, time_budget=3.0))
+        mcts.append(MCTS(model, selfplay=False, time_budget=5.0))
     else:
         mcts.append(None)
     if args.white:
         model = AlphaZeroNet.load_from_checkpoint(args.white, 
-                                                  map_location='cuda',
+                                                  map_location='cpu',
                                                   board_height=args.height, 
                                                   board_width=args.width,
                                                   k=args.k)
-        mcts.append(MCTS(model, selfplay=False, time_budget=3.0))
+        mcts.append(MCTS(model, selfplay=False, time_budget=5.0))
     else:
         mcts.append(None)
     
@@ -104,5 +117,4 @@ def main():
     
     gameplay(mcts, gomoku)
     
-
 main()
